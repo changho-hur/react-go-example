@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	_ "github.com/go-sql-driver/mysql"
@@ -22,7 +24,14 @@ type Customer struct {
 
 func main() {
 
-	db, _ = sql.Open("mysql", "https://github.com/go-sql-driver/mysql#examples") // 접속 정보 등 외부 파일로 빼보자.
+	b, _ := ioutil.ReadFile("./database.json")
+	var ds = make(map[string]string)
+	json.Unmarshal(b, &ds)
+	dataSourceName := ds["user"] + ":" + ds["pwd"] + "@tcp(" + ds["host"] + ":" + ds["port"] + ")/" + ds["database"]
+
+	log.Print("mysql database connection info=[", dataSourceName, "]")
+
+	db, _ = sql.Open("mysql", dataSourceName)
 	defer db.Close()
 
 	router := gin.Default()
