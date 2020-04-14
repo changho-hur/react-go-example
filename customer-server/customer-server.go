@@ -8,6 +8,7 @@ import (
 	"net/http"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gin-gonic/gin"
+	"path/filepath"
 )
 
 var db *sql.DB
@@ -38,6 +39,9 @@ func main() {
 	router.Use(CORSMiddleware())
 	router.GET("/ping", pingHandler)
 
+	// Set a lower memory limit for multipart forms (default is 32 MiB)
+	// router.MaxMultipartMemory = 8 << 20 // 8 MiB
+
 	cust := router.Group("/customer")
 	{
 		cust.GET("/list", listEndpoint)
@@ -63,14 +67,38 @@ func addEndpoint(c *gin.Context) {
 
 	var customer Customer
 	err := c.Bind(&customer)
+
 	if err != nil {
 		log.Print("parameter bind error [", err,"]")
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
+	file, err := c.FormFile("image") // formData.append('image', this.state.file);
+
+	if err != nil {
+		log.Print("file load error [", err,"]")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	log.Print("form file name=", file.Filename)
+
+	// Upload the file to specific dst.
+	filename := filepath.Base(file.Filename)
+	uploadPath := "./upload/"+filename;
+	log.Print("uploaded file full path=", uploadPath)
+
+	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+		log.Print("file save error [", err,"]")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
 	log.Print(customer)
 
+	// 파일 업로드 됨.
+	// db 저장 넣기, 파일명 unique string으로 치환하기기
 	c.Status(http.StatusOK)
 	log.Print("[addEndpoint] END")
 }
