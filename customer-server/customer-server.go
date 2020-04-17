@@ -57,7 +57,7 @@ func deleteEndpoint(c *gin.Context) {
 	log.Print("[deleteEndpoint] id= ", customerId)
 	result, _ := db.Exec("UPDATE CUSTOMER SET isDeleted = 'Y' where id = ?", customerId)
 	row, _ := result.RowsAffected()
-	log.Print("[deleteEndpoint]", row, "data deleted.")
+	log.Print("[deleteEndpoint] ", row, " data deleted.")
 	c.Status(http.StatusOK)
 	log.Print("[deleteEndpoint] END")
 }
@@ -86,7 +86,7 @@ func addEndpoint(c *gin.Context) {
 
 	// Upload the file to specific dst.
 	filename := filepath.Base(file.Filename)
-	uploadPath := "./upload/"+filename;
+	uploadPath := "./upload/"+filename
 	log.Print("uploaded file full path=", uploadPath)
 
 	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
@@ -99,6 +99,15 @@ func addEndpoint(c *gin.Context) {
 
 	// 파일 업로드 됨.
 	// db 저장 넣기, 파일명 unique string으로 치환하기기
+	result, err := db.Exec("INSERT into CUSTOMER (name, birthday, job, gender, image, createdDate, isDeleted) values (?, ?, ?, ?, ?, now(), 'N')", customer.Name, customer.BirthDay, customer.Job, customer.Gender, uploadPath)
+	if err != nil {
+		log.Print("exec insert error [", err,"]")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	row, _ := result.RowsAffected()
+
+	log.Print("[addEndpoint] ", row, " data inserted.")
 	c.Status(http.StatusOK)
 	log.Print("[addEndpoint] END")
 }
